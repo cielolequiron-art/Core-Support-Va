@@ -500,7 +500,23 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    console.log('Login attempt with Supabase', { email });
+    console.log('Login attempt', { email });
+
+    // Demo Bypass
+    if (email === 'demova' && password === 'demova') {
+      console.log('Demo login successful');
+      const demoUser: UserData = {
+        id: 'demo-va-id',
+        name: 'Demo VA',
+        email: 'demova@demo.com',
+        role: 'va',
+        status: 'approved'
+      };
+      onLogin(demoUser);
+      navigate('/');
+      setLoading(false);
+      return;
+    }
     
     try {
       const { data, error: authError } = await supabase.auth.signInWithPassword({
@@ -547,13 +563,13 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Email or Username</label>
             <input 
-              type="email" 
+              type="text" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              placeholder="name@company.com"
+              placeholder="demova"
               required
             />
           </div>
@@ -573,6 +589,22 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
             className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-md disabled:opacity-50"
           >
             {loading ? 'Logging in...' : 'Log In'}
+          </button>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-zinc-200"></div></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-zinc-400 font-bold">Or use demo</span></div>
+          </div>
+
+          <button 
+            type="button"
+            onClick={() => {
+              setEmail('demova');
+              setPassword('demova');
+            }}
+            className="w-full bg-zinc-100 text-zinc-900 py-2.5 rounded-lg font-bold hover:bg-zinc-200 transition-all border border-zinc-200"
+          >
+            Fill Demo Credentials
           </button>
         </form>
         
