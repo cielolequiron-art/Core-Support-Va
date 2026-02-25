@@ -153,23 +153,23 @@ if (adminCount.count === 0) {
 // Seed demo accounts
 const vaDemoCount = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get('va@demo.com') as { count: number };
 if (vaDemoCount.count === 0) {
-  const vaId = uuidv4();
+  const vaId = 'va-demo-1';
   db.prepare('INSERT INTO users (id, role, name, email, password, status) VALUES (?, ?, ?, ?, ?, ?)').run(
     vaId, 'va', 'Demo VA', 'va@demo.com', 'demo', 'approved'
   );
   db.prepare('INSERT INTO va_profiles (id, user_id, headline, bio, hourly_rate, monthly_salary, id_proof_score, education, last_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-    uuidv4(), vaId, 'Expert Virtual Assistant', 'I am a demo VA profile with extensive experience in administrative tasks.', 15, 2400, 80, 'Bachelors degree', 'Today'
+    'va-prof-demo', vaId, 'Expert Virtual Assistant', 'I am a demo VA profile with extensive experience in administrative tasks.', 15, 2400, 80, 'Bachelors degree', 'Today'
   );
 }
 
 const employerDemoCount = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get('emp@demo.com') as { count: number };
 if (employerDemoCount.count === 0) {
-  const empId = uuidv4();
+  const empId = 'employer-demo-1';
   db.prepare('INSERT INTO users (id, role, name, email, password, status) VALUES (?, ?, ?, ?, ?, ?)').run(
     empId, 'employer', 'Demo Employer', 'emp@demo.com', 'demo', 'approved'
   );
   db.prepare('INSERT INTO employer_profiles (id, user_id, company_name, industry) VALUES (?, ?, ?, ?)').run(
-    uuidv4(), empId, 'Demo Corp', 'Technology'
+    'emp-prof-demo', empId, 'Demo Corp', 'Technology'
   );
 }
 
@@ -377,5 +377,7 @@ if (sampleJobsCount.count <= 1) { // Only seed if empty or just the one from pre
     }
   }
 }
+
+console.log("Database initialized successfully.");
 
 export default db;

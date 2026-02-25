@@ -489,20 +489,25 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login form submitted', { email });
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
+      console.log('Login response status:', res.status);
       const data = await res.json();
       if (res.ok) {
+        console.log('Login successful', data.user);
         onLogin(data.user);
         navigate('/');
       } else {
+        console.error('Login failed:', data.error);
         setError(data.error);
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('Something went wrong');
     }
   };
@@ -574,20 +579,25 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Register form submitted', { email, role });
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role })
       });
+      console.log('Register response status:', res.status);
       const data = await res.json();
       if (res.ok) {
+        console.log('Register successful', data.user);
         onLogin(data.user);
         navigate('/');
       } else {
+        console.error('Register failed:', data.error);
         setError(data.error);
       }
     } catch (err) {
+      console.error('Register error:', err);
       setError('Something went wrong');
     }
   };
@@ -1204,6 +1214,201 @@ const VADashboard = ({ user }: { user: UserData }) => {
   );
 };
 
+const PricingPage = () => {
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
+
+  const plans = [
+    {
+      name: 'FREE',
+      price: 'FREE',
+      subtitle: 'WHY NO FREE TRIAL?',
+      color: 'border-emerald-500',
+      headerBg: 'bg-emerald-500',
+      features: [
+        'Hire & Communicate with Workers',
+        'Up to 3 Job Posts',
+        'Max 15 applications per Job',
+        '2 days Job Post approval',
+        'View Job Applications',
+        'Use Timeproof',
+        'Bookmark Workers',
+        'Easypay'
+      ]
+    },
+    {
+      name: 'PRO',
+      price: '$69',
+      subtitle: 'Cancel anytime.',
+      color: 'border-blue-500',
+      headerBg: 'bg-blue-500',
+      savings: '64% Savings!',
+      features: [
+        'Hire & Communicate with Workers',
+        'Up to 3 Job Posts',
+        'Max 200 applications per Job',
+        'Instant Job Post approval',
+        'View Job Applications',
+        'Use Timeproof',
+        'Bookmark Workers',
+        'Easypay',
+        'Contact 75 workers / month',
+        'Read Worker Reviews'
+      ],
+      footer: 'Cancel Anytime Easily'
+    },
+    {
+      name: 'PREMIUM',
+      price: '$99',
+      subtitle: 'Cancel anytime.',
+      color: 'border-red-500',
+      headerBg: 'bg-red-500',
+      badge: 'MOST POPULAR!',
+      savings: '71% Savings!',
+      aiMatching: true,
+      features: [
+        'Hire & Communicate with Workers',
+        'Up to 10 Job Posts',
+        'Max 200 applications per Job',
+        'Instant Job Post approval',
+        'View Job Applications',
+        'Use Timeproof',
+        'Bookmark Workers',
+        'Easypay',
+        'Contact 500 workers / month',
+        'Read Worker Reviews',
+        'Unlimited Background Data Checks',
+        'Worker Mentoring Service'
+      ],
+      footer: 'Cancel Anytime Easily'
+    }
+  ];
+
+  return (
+    <div className="bg-zinc-50 min-h-screen py-16 px-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16 space-y-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-zinc-900">Hire direct. No salary markups or ongoing fees.</h1>
+          <p className="text-xl text-zinc-600">Cancel when done recruiting.</p>
+          <p className="text-lg text-zinc-500 font-medium">Hire great talent or we'll give your money back. It's better than a "free trial."</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+          {plans.map((plan) => (
+            <div key={plan.name} className={cn(
+              "bg-white rounded-3xl border-t-8 shadow-xl overflow-hidden relative flex flex-col h-full",
+              plan.color
+            )}>
+              {plan.badge && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-600 text-white px-6 py-1.5 rounded-full text-sm font-bold shadow-lg z-10 whitespace-nowrap">
+                  {plan.badge}
+                </div>
+              )}
+              
+              <div className="p-8 text-center border-b border-zinc-100">
+                <div className={cn("inline-block px-4 py-1 rounded-lg text-white text-sm font-bold mb-4 uppercase tracking-wider", plan.headerBg)}>
+                  {plan.name}
+                </div>
+                {plan.subtitle && (
+                  <div className="mb-4">
+                    <button className="text-blue-600 text-xs font-bold underline uppercase tracking-wider hover:text-blue-700">
+                      {plan.subtitle}
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  <span className="text-6xl font-black text-blue-600 tracking-tighter">{plan.price}</span>
+                  {plan.price !== 'FREE' && <span className="text-zinc-400 font-bold text-sm self-end mb-2">USD</span>}
+                </div>
+                {plan.price !== 'FREE' && (
+                  <div className="bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded inline-block mb-6">
+                    Cancel anytime.
+                  </div>
+                )}
+
+                {plan.savings && (
+                  <div className="flex p-1 bg-zinc-100 rounded-xl mb-6">
+                    <button 
+                      onClick={() => setBillingCycle('monthly')}
+                      className={cn(
+                        "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                        billingCycle === 'monthly' ? "bg-blue-600 text-white shadow-md" : "text-zinc-500"
+                      )}
+                    >
+                      Monthly
+                    </button>
+                    <button 
+                      onClick={() => setBillingCycle('annually')}
+                      className={cn(
+                        "flex-1 py-2 text-xs font-bold rounded-lg transition-all relative",
+                        billingCycle === 'annually' ? "bg-blue-600 text-white shadow-md" : "text-zinc-500"
+                      )}
+                    >
+                      Annually
+                      <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[8px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+                        ({plan.savings})
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+                {plan.aiMatching && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-6 text-left relative overflow-hidden">
+                    <div className="text-blue-800 font-bold text-xs">AI Matching</div>
+                    <div className="text-blue-600 text-[10px] font-medium">(Tell me who to hire!)</div>
+                    <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">NEW!</div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-8 flex-1 space-y-4">
+                {plan.features.map((feature, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="mt-0.5 bg-blue-600 rounded p-0.5">
+                      <CheckCircle className="w-3 h-3 text-white" />
+                    </div>
+                    <span className="text-sm font-bold text-zinc-700 leading-tight">
+                      {feature.includes('workers / month') ? (
+                        <>
+                          {feature} <span className="text-blue-400 font-black">?</span>
+                        </>
+                      ) : feature}
+                    </span>
+                  </div>
+                ))}
+
+                {plan.aiMatching && (
+                  <div className="flex items-start gap-3 pt-4 border-t border-zinc-50">
+                    <div className="mt-0.5 bg-blue-600 rounded p-0.5">
+                      <CheckCircle className="w-3 h-3 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-zinc-700">AI Matching</span>
+                        <span className="bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">NEW!</span>
+                        <span className="text-blue-400 font-black text-xs">?</span>
+                      </div>
+                      <div className="text-[10px] text-blue-600 font-medium">(Tell me who to hire!)</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {plan.footer && (
+                <div className="p-4 bg-zinc-50 border-t border-zinc-100 text-center">
+                  <button className="text-blue-600 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 mx-auto hover:underline">
+                    <ShieldCheck className="w-3 h-3" />
+                    {plan.footer}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TalentSearchPage = () => {
   const [talents, setTalents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1718,6 +1923,7 @@ export default function App() {
             <Route path="/jobs" element={<JobsPage user={user} />} />
             <Route path="/jobs/:id" element={<JobDetailsPage user={user} />} />
             <Route path="/talents" element={<TalentSearchPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
             <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage onLogin={handleLogin} />} />
             <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage onLogin={handleLogin} />} />
             

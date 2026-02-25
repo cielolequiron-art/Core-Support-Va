@@ -14,16 +14,25 @@ async function startServer() {
   // Auth
   app.post("/api/auth/login", (req, res) => {
     const { email, password } = req.body;
-    const user = db.prepare("SELECT * FROM users WHERE email = ? AND password = ?").get(email, password) as any;
-    if (user) {
-      res.json({ user });
-    } else {
-      res.status(401).json({ error: "Invalid credentials" });
+    console.log(`Login attempt for: ${email}`);
+    try {
+      const user = db.prepare("SELECT * FROM users WHERE email = ? AND password = ?").get(email, password) as any;
+      if (user) {
+        console.log(`Login successful for: ${email}`);
+        res.json({ user });
+      } else {
+        console.log(`Login failed for: ${email} - Invalid credentials`);
+        res.status(401).json({ error: "Invalid credentials" });
+      }
+    } catch (err: any) {
+      console.error(`Login error for ${email}:`, err.message);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
   app.post("/api/auth/register", (req, res) => {
     const { name, email, password, role } = req.body;
+    console.log(`Registration attempt for: ${email} as ${role}`);
     const id = uuidv4();
     try {
       db.prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)").run(id, name, email, password, role);
@@ -35,9 +44,11 @@ async function startServer() {
       }
       
       const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
+      console.log(`Registration successful for: ${email}`);
       res.json({ user });
-    } catch (e) {
-      res.status(400).json({ error: "Email already exists" });
+    } catch (e: any) {
+      console.error(`Registration error for ${email}:`, e.message);
+      res.status(400).json({ error: e.message.includes("UNIQUE") ? "Email already exists" : "Registration failed" });
     }
   });
 
