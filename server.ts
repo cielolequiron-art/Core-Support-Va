@@ -163,34 +163,6 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.post("/api/admin/users", (req, res) => {
-    const { name, email, password, role, status, admin_id } = req.body;
-    const id = uuidv4();
-    try {
-      db.prepare("INSERT INTO users (id, name, email, password, role, status) VALUES (?, ?, ?, ?, ?, ?)")
-        .run(id, name, email, password, role, status);
-      
-      db.prepare("INSERT INTO admin_logs (id, admin_id, action_type, target_user_id, description) VALUES (?, ?, ?, ?, ?)")
-        .run(uuidv4(), admin_id, 'user_created', id, `Created user ${name} (${email})`);
-      
-      res.json({ id });
-    } catch (e) {
-      res.status(400).json({ error: "User already exists" });
-    }
-  });
-
-  app.put("/api/admin/users/:id", (req, res) => {
-    const { name, email, role, status, admin_id } = req.body;
-    const { id } = req.params;
-    db.prepare("UPDATE users SET name = ?, email = ?, role = ?, status = ? WHERE id = ?")
-      .run(name, email, role, status, id);
-    
-    db.prepare("INSERT INTO admin_logs (id, admin_id, action_type, target_user_id, description) VALUES (?, ?, ?, ?, ?)")
-      .run(uuidv4(), admin_id, 'user_updated', id, `Updated user ${name} (${email})`);
-    
-    res.json({ success: true });
-  });
-
   app.delete("/api/admin/delete-user", (req, res) => {
     const { id, admin_id } = req.body;
     db.prepare("DELETE FROM users WHERE id = ?").run(id);
@@ -213,14 +185,20 @@ async function startServer() {
   });
 
   // VA Profiles
-  app.get("/api/va/profiles", (req, res) => {
+  app.get("/api/talents", (req, res) => {
     const profiles = db.prepare(`
       SELECT va_profiles.*, users.name, users.email 
       FROM va_profiles 
       JOIN users ON va_profiles.user_id = users.id
       WHERE users.status = 'approved'
-    `).all();
-    res.json(profiles);
+    `).all() as any[];
+
+    const profilesWithSkills = profiles.map(profile => {
+      const skills = db.prepare("SELECT skill_name, years_experience FROM va_skills WHERE va_id = ?").all(profile.user_id) as any[];
+      return { ...profile, skills };
+    });
+
+    res.json(profilesWithSkills);
   });
 
   // --- VITE MIDDLEWARE ---

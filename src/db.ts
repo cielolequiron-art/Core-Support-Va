@@ -22,8 +22,14 @@ db.exec(`
     headline TEXT,
     bio TEXT,
     hourly_rate REAL,
+    monthly_salary REAL,
     availability TEXT,
     experience_years INTEGER,
+    id_proof_score INTEGER DEFAULT 0,
+    iq_score INTEGER DEFAULT 0,
+    english_score INTEGER DEFAULT 0,
+    education TEXT,
+    last_active TEXT,
     intro_video_url TEXT,
     resume_url TEXT,
     profile_views INTEGER DEFAULT 0,
@@ -110,20 +116,30 @@ db.exec(`
     FOREIGN KEY (receiver_id) REFERENCES users(id)
   );
 
-  CREATE TABLE IF NOT EXISTS job_skills (
+  CREATE TABLE IF NOT EXISTS va_skills (
     id TEXT PRIMARY KEY,
-    job_id TEXT NOT NULL,
+    va_id TEXT NOT NULL,
     skill_name TEXT NOT NULL,
-    FOREIGN KEY (job_id) REFERENCES jobs(id)
+    years_experience TEXT,
+    FOREIGN KEY (va_id) REFERENCES users(id)
   );
 `);
+
+// Add columns if they don't exist (for existing DBs)
+try { db.exec("ALTER TABLE va_profiles ADD COLUMN id_proof_score INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE va_profiles ADD COLUMN iq_score INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE va_profiles ADD COLUMN english_score INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE va_profiles ADD COLUMN education TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE va_profiles ADD COLUMN last_active TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE va_profiles ADD COLUMN monthly_salary REAL;"); } catch(e) {}
 
 // Seed default plans if they don't exist
 const plansCount = db.prepare('SELECT count(*) as count FROM plans').get() as { count: number };
 if (plansCount.count === 0) {
   const insertPlan = db.prepare('INSERT INTO plans (id, name, price, job_post_limit, messaging_limit, candidate_unlock_limit, featured_jobs_limit) VALUES (?, ?, ?, ?, ?, ?, ?)');
-  insertPlan.run('free', 'Free', 0, 1, 5, 2, 0);
-  insertPlan.run('premium', 'Premium', 29, 9999, 9999, 9999, 10);
+  insertPlan.run('starter', 'Starter', 49, 3, 20, 10, 0);
+  insertPlan.run('pro', 'Pro', 99, 10, 100, 50, 2);
+  insertPlan.run('enterprise', 'Enterprise', 199, 999, 999, 999, 10);
 }
 
 // Seed admin if not exists
@@ -135,26 +151,180 @@ if (adminCount.count === 0) {
 }
 
 // Seed demo accounts
-const vaDemoCount = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get('vademo@email.com') as { count: number };
+const vaDemoCount = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get('va@demo.com') as { count: number };
 if (vaDemoCount.count === 0) {
-  const vaId = 'va-demo-1';
+  const vaId = uuidv4();
   db.prepare('INSERT INTO users (id, role, name, email, password, status) VALUES (?, ?, ?, ?, ?, ?)').run(
-    vaId, 'va', 'Demo VA', 'vademo@email.com', 'vademo', 'approved'
+    vaId, 'va', 'Demo VA', 'va@demo.com', 'demo', 'approved'
   );
-  db.prepare('INSERT INTO va_profiles (id, user_id, headline, bio, hourly_rate) VALUES (?, ?, ?, ?, ?)').run(
-    'va-prof-demo', vaId, 'Expert Virtual Assistant', 'I am a demo VA profile with extensive experience in administrative tasks.', 15
+  db.prepare('INSERT INTO va_profiles (id, user_id, headline, bio, hourly_rate, monthly_salary, id_proof_score, education, last_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+    uuidv4(), vaId, 'Expert Virtual Assistant', 'I am a demo VA profile with extensive experience in administrative tasks.', 15, 2400, 80, 'Bachelors degree', 'Today'
   );
 }
 
-const employerDemoCount = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get('edemo@dmail.com') as { count: number };
+const employerDemoCount = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get('emp@demo.com') as { count: number };
 if (employerDemoCount.count === 0) {
-  const empId = 'employer-demo-1';
+  const empId = uuidv4();
   db.prepare('INSERT INTO users (id, role, name, email, password, status) VALUES (?, ?, ?, ?, ?, ?)').run(
-    empId, 'employer', 'Demo Employer', 'edemo@dmail.com', 'edemo', 'approved'
+    empId, 'employer', 'Demo Employer', 'emp@demo.com', 'demo', 'approved'
   );
   db.prepare('INSERT INTO employer_profiles (id, user_id, company_name, industry) VALUES (?, ?, ?, ?)').run(
-    'emp-prof-demo', empId, 'Demo Corp', 'Technology'
+    uuidv4(), empId, 'Demo Corp', 'Technology'
   );
+}
+
+// Seed provided VAs
+const vaProfilesCount = db.prepare('SELECT count(*) as count FROM users WHERE role = ?').get('va') as { count: number };
+if (vaProfilesCount.count <= 2) { // Only seed if empty or just the demo
+  const insertUser = db.prepare('INSERT INTO users (id, role, name, email, password, status) VALUES (?, ?, ?, ?, ?, ?)');
+  const insertProfile = db.prepare(`
+    INSERT INTO va_profiles (id, user_id, headline, bio, hourly_rate, monthly_salary, id_proof_score, education, last_active, availability)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const insertSkill = db.prepare('INSERT INTO va_skills (id, va_id, skill_name, years_experience) VALUES (?, ?, ?, ?)');
+
+  const vas = [
+    {
+      name: 'Oliver',
+      headline: 'Web Developer & Designer | Next.js & TypeScript Expert',
+      idProof: 70,
+      hourly: 4.42,
+      monthly: 800,
+      education: 'Bachelors degree',
+      lastActive: 'Today',
+      bio: "I am a versatile Web Developer & Designer who builds high-performance web applications. I don't just write code; I design user-centric interfaces in Figma and bring them to life with modern technologies.",
+      availability: 'full-time work (8 hours/day)',
+      skills: [
+        { name: 'Figma', exp: '2 - 5 years' },
+        { name: 'Next JS', exp: '1 - 2 years' },
+        { name: 'Web Development', exp: '2 - 5 years' }
+      ]
+    },
+    {
+      name: 'Mika-Ella',
+      headline: 'Web Developer',
+      idProof: 85,
+      hourly: 7.08,
+      monthly: 1280,
+      education: 'Bachelors degree',
+      lastActive: 'Today',
+      bio: "Experienced Software Developer and Frontend Developer with expertise in mobile and web application development. Passionate about creating exceptional user experiences through clean and efficient code.",
+      availability: 'full-time work (8 hours/day)',
+      skills: [
+        { name: 'Javascript', exp: '2 - 5 years' },
+        { name: 'React JS', exp: '1 - 2 years' },
+        { name: 'TailwindCSS', exp: '1 - 2 years' }
+      ]
+    },
+    {
+      name: 'Ashley',
+      headline: 'Web Developer/Full stack',
+      idProof: 40,
+      hourly: 2.12,
+      monthly: 384,
+      education: 'Bachelors degree',
+      lastActive: 'Today',
+      bio: "I'm Ashley Durano Rodriguez, Graduated from Cebu Technological University Danao Campus pursuing Bachelor of Science in Information Technology Major in Programming. I am looking for opportunities to grow.",
+      availability: 'full-time work (8 hours/day)',
+      skills: [
+        { name: 'Web Design & Page Layout', exp: 'Less than 6 months' },
+        { name: 'React JS', exp: 'Less than 6 months' },
+        { name: 'React Native', exp: 'Less than 6 months' }
+      ]
+    },
+    {
+      name: 'Angelito',
+      headline: 'Offensive Security Engineer, Data Engineer, Graphic Artist, UI/UX Web Design, Web Developer, Fullstack',
+      idProof: 70,
+      hourly: 12.39,
+      monthly: 2240,
+      education: 'Bachelors degree',
+      lastActive: 'Today',
+      bio: "To be able to work in an environment that provides opportunities to practice my obtained knowledge and skills in the field of Information Technology.",
+      availability: 'full-time work (8 hours/day)',
+      skills: [
+        { name: 'Graphic Design', exp: '2 - 5 years' },
+        { name: 'Data Analytics', exp: '1 - 2 years' },
+        { name: 'Cybersecurity', exp: '2 - 5 years' },
+        { name: 'Web Development', exp: '2 - 5 years' }
+      ]
+    },
+    {
+      name: 'Keito',
+      headline: 'SEO Specialist|Web Developer|Technical VA',
+      idProof: 80,
+      hourly: 5.31,
+      monthly: 960,
+      education: 'Bachelors degree in Information Technology',
+      lastActive: 'Today',
+      bio: "Hi, I’m Kit, your new Technical Virtual Assistant. With three years of experience in SEO, web development, technical support, and social media management, I bring a wealth of skills.",
+      availability: 'full-time work (8 hours/day)',
+      skills: [
+        { name: 'SEO', exp: '2 - 5 years' },
+        { name: 'On-Page', exp: '2 - 5 years' },
+        { name: 'Wordpress', exp: '2 - 5 years' }
+      ]
+    },
+    {
+      name: 'Gerald',
+      headline: 'Web Designer/Developer + VA',
+      idProof: 85,
+      hourly: 8.85,
+      monthly: 1600,
+      education: 'Bachelors degree',
+      lastActive: 'Today',
+      bio: "GeralDesign ? Web Designer/Developer | Funnel Designer | WordPress | Virtual Assistant & Personal Assistant. I specialize first and foremost in Web Design and Front-End development.",
+      availability: 'full-time work (8 hours/day)',
+      skills: [
+        { name: 'Graphic Design', exp: '2 - 5 years' },
+        { name: 'Web Design & Page Layout', exp: '2 - 5 years' },
+        { name: 'Wordpress', exp: '2 - 5 years' }
+      ]
+    },
+    {
+      name: 'Royena',
+      headline: 'Web Developer | PHP & WordPress Expert',
+      idProof: 60,
+      hourly: 5.31,
+      monthly: 960,
+      education: 'Associates degree',
+      lastActive: 'Today',
+      bio: "Results-driven Full Stack Web Developer with 5+ years of experience building high-performance websites. Skilled in PHP, WordPress, Laravel, CodeIgniter, and modern frontend frameworks.",
+      availability: 'full-time work (8 hours/day)',
+      skills: [
+        { name: 'PHP', exp: '2 - 5 years' },
+        { name: 'Wordpress', exp: '2 - 5 years' },
+        { name: 'CSS', exp: '2 - 5 years' },
+        { name: 'HTML', exp: 'Less than 6 months' }
+      ]
+    },
+    {
+      name: 'Paul',
+      headline: 'Senior Web Developer',
+      idProof: 90,
+      hourly: 17.70,
+      monthly: 3200,
+      education: 'Bachelors degree',
+      lastActive: 'Today',
+      bio: "PHP, Laravel, AWS, MWS, SPAPI, Twilio, Coldfusion, Docker, Wordpress, Opencart, Payment gateways, API development, Html/Html5, Css/Css3/Scss/Sass, Bootstrap, Js, Jquery, Ajax.",
+      availability: 'full-time work (8 hours/day)',
+      skills: [
+        { name: 'PHP', exp: '5+ years' },
+        { name: 'Laravel', exp: '5+ years' },
+        { name: 'AWS', exp: '2 - 5 years' }
+      ]
+    }
+  ];
+
+  for (const va of vas) {
+    const userId = uuidv4();
+    const email = `${va.name.toLowerCase().replace(/\s+/g, '')}@demo.com`;
+    insertUser.run(userId, 'va', va.name, email, 'demo', 'approved');
+    insertProfile.run(uuidv4(), userId, va.headline, va.bio, va.hourly, va.monthly, va.idProof, va.education, va.lastActive, va.availability);
+    for (const skill of va.skills) {
+      insertSkill.run(uuidv4(), userId, skill.name, skill.exp);
+    }
+  }
 }
 
 // Seed sample jobs

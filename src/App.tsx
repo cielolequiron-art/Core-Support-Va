@@ -286,43 +286,6 @@ const JobDetailsPage = ({ user }: { user: UserData | null }) => {
   );
 };
 
-const PricingPage = () => {
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-20">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold text-zinc-900 mb-4">Simple, Transparent Pricing</h1>
-        <p className="text-zinc-600 max-w-2xl mx-auto">Choose the plan that's right for your business. Upgrade or downgrade at any time.</p>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-xl transition-all">
-          <h3 className="text-xl font-bold text-zinc-900 mb-2">Free</h3>
-          <div className="text-4xl font-bold text-zinc-900 mb-6">$0<span className="text-lg text-zinc-400 font-normal">/mo</span></div>
-          <ul className="space-y-4 mb-8 text-zinc-600">
-            <li className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-emerald-500" /> 1 Job Post</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-emerald-500" /> 5 Messages to Applicants</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-emerald-500" /> Basic Support</li>
-          </ul>
-          <button className="w-full py-3 rounded-xl border border-zinc-200 font-bold text-zinc-900 hover:bg-zinc-50 transition-all">Get Started</button>
-        </div>
-
-        <div className="bg-teal-600 p-8 rounded-3xl text-white shadow-xl shadow-teal-100 relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1 rounded-bl-xl">Popular</div>
-          <h3 className="text-xl font-bold mb-2">Premium</h3>
-          <div className="text-4xl font-bold mb-6">$29<span className="text-lg text-teal-200 font-normal">/mo</span></div>
-          <ul className="space-y-4 mb-8 text-teal-50">
-            <li className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-teal-200" /> Unlimited Job Posts</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-teal-200" /> Unlimited Messages to Applicants</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-teal-200" /> Direct Messaging to Applicants</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-teal-200" /> Priority Support</li>
-          </ul>
-          <button className="w-full py-3 rounded-xl bg-white text-teal-600 font-bold hover:bg-teal-50 transition-all shadow-lg">Upgrade Now</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const Navbar = ({ user, onLogout }: { user: UserData | null; onLogout: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -559,6 +522,13 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</div>}
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-6">
+            <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2">Demo Credentials</h4>
+            <div className="space-y-1 text-xs text-indigo-900">
+              <p><strong>VA:</strong> va@demo.com / demo</p>
+              <p><strong>Employer:</strong> emp@demo.com / demo</p>
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1">Email Address</label>
             <input 
@@ -566,7 +536,7 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              placeholder="vademo@email.com or edemo@dmail.com"
+              placeholder="name@company.com"
               required
             />
           </div>
@@ -577,7 +547,7 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              placeholder="vademo or edemo"
+              placeholder="••••••••"
               required
             />
           </div>
@@ -719,9 +689,6 @@ const AdminDashboard = ({ user }: { user: UserData }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'logs'>('overview');
   const [rejectingJobId, setRejectingJobId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [editingUser, setEditingUser] = useState<any | null>(null);
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [userFormData, setUserFormData] = useState({ name: '', email: '', password: '', role: 'va' as UserRole, status: 'approved' });
 
   const fetchData = useCallback(() => {
     fetch('/api/admin/stats').then(res => res.json()).then(setStats);
@@ -733,40 +700,6 @@ const AdminDashboard = ({ user }: { user: UserData }) => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  const handleSaveUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const url = editingUser ? `/api/admin/users/${editingUser.id}` : '/api/admin/users';
-    const method = editingUser ? 'PUT' : 'POST';
-    
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...userFormData, admin_id: user.id })
-    });
-    
-    if (res.ok) {
-      setShowUserModal(false);
-      setEditingUser(null);
-      setUserFormData({ name: '', email: '', password: '', role: 'va', status: 'approved' });
-      fetchData();
-    } else {
-      const data = await res.json();
-      alert(data.error || 'Failed to save user');
-    }
-  };
-
-  const openEditModal = (u: any) => {
-    setEditingUser(u);
-    setUserFormData({ name: u.name, email: u.email, password: '', role: u.role, status: u.status });
-    setShowUserModal(true);
-  };
-
-  const openAddModal = () => {
-    setEditingUser(null);
-    setUserFormData({ name: '', email: '', password: '', role: 'va', status: 'approved' });
-    setShowUserModal(true);
-  };
 
   const approveJob = async (id: string) => {
     await fetch('/api/admin/approve-job', {
@@ -903,23 +836,15 @@ const AdminDashboard = ({ user }: { user: UserData }) => {
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h2 className="text-xl font-bold text-zinc-900">User Management</h2>
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="relative flex-1 md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                <input 
-                  type="text" 
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  placeholder="Search users..."
-                  className="w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
-              <button 
-                onClick={openAddModal}
-                className="bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-teal-700 flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> Add User
-              </button>
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <input 
+                type="text" 
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Search users..."
+                className="w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500"
+              />
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -961,7 +886,6 @@ const AdminDashboard = ({ user }: { user: UserData }) => {
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
-                      <button onClick={() => openEditModal(u)} className="text-xs font-bold text-teal-600 hover:underline">Edit</button>
                       {u.status !== 'approved' && (
                         <button onClick={() => updateUserStatus(u.id, 'approved')} className="text-xs font-bold text-emerald-600 hover:underline">Approve</button>
                       )}
@@ -1011,81 +935,6 @@ const AdminDashboard = ({ user }: { user: UserData }) => {
           </div>
         </div>
       )}
-
-      {/* User Modal */}
-      <AnimatePresence>
-        {showUserModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowUserModal(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 p-6">
-              <h3 className="text-lg font-bold text-zinc-900 mb-4">{editingUser ? 'Edit User' : 'Add New User'}</h3>
-              <form onSubmit={handleSaveUser} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Full Name</label>
-                  <input 
-                    type="text" 
-                    value={userFormData.name}
-                    onChange={(e) => setUserFormData({...userFormData, name: e.target.value})}
-                    className="w-full px-4 py-2 border border-zinc-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Email</label>
-                  <input 
-                    type="email" 
-                    value={userFormData.email}
-                    onChange={(e) => setUserFormData({...userFormData, email: e.target.value})}
-                    className="w-full px-4 py-2 border border-zinc-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-500"
-                    required
-                  />
-                </div>
-                {!editingUser && (
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Password</label>
-                    <input 
-                      type="password" 
-                      value={userFormData.password}
-                      onChange={(e) => setUserFormData({...userFormData, password: e.target.value})}
-                      className="w-full px-4 py-2 border border-zinc-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-500"
-                      required
-                    />
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Role</label>
-                    <select 
-                      value={userFormData.role}
-                      onChange={(e) => setUserFormData({...userFormData, role: e.target.value as UserRole})}
-                      className="w-full px-4 py-2 border border-zinc-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option value="va">VA</option>
-                      <option value="employer">Employer</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Status</label>
-                    <select 
-                      value={userFormData.status}
-                      onChange={(e) => setUserFormData({...userFormData, status: e.target.value})}
-                      className="w-full px-4 py-2 border border-zinc-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option value="approved">Approved</option>
-                      <option value="pending">Pending</option>
-                      <option value="suspended">Suspended</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button type="submit" className="flex-1 bg-teal-600 text-white py-2 rounded-lg font-bold hover:bg-teal-700">Save User</button>
-                  <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 bg-zinc-100 text-zinc-600 py-2 rounded-lg font-bold hover:bg-zinc-200">Cancel</button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Rejection Modal */}
       <AnimatePresence>
@@ -1165,11 +1014,11 @@ const EmployerDashboard = ({ user }: { user: UserData }) => {
         
         <div className="space-y-6">
           <div className="bg-indigo-600 p-6 rounded-2xl text-white shadow-xl shadow-indigo-100">
-            <h3 className="text-lg font-bold mb-2">Current Plan: Free</h3>
-            <p className="text-indigo-100 text-sm mb-6">Upgrade to Premium for unlimited job posts and direct messaging.</p>
-            <Link to="/pricing" className="block w-full text-center bg-white text-indigo-600 py-2 rounded-lg font-bold hover:bg-indigo-50 transition-all">
+            <h3 className="text-lg font-bold mb-2">Current Plan: Starter</h3>
+            <p className="text-indigo-100 text-sm mb-6">You have 2 job posts remaining this month.</p>
+            <button className="w-full bg-white text-indigo-600 py-2 rounded-lg font-bold hover:bg-indigo-50 transition-all">
               Upgrade Plan
-            </Link>
+            </button>
           </div>
           
           <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
@@ -1209,7 +1058,7 @@ const EmployerDashboard = ({ user }: { user: UserData }) => {
               </div>
               <form onSubmit={handlePostJob} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-bold text-zinc-700 mb-1">Job Title / Heading</label>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Job Title</label>
                   <input 
                     type="text" 
                     value={title}
@@ -1220,7 +1069,7 @@ const EmployerDashboard = ({ user }: { user: UserData }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-zinc-700 mb-1">Job Description</label>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Description</label>
                   <textarea 
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -1231,7 +1080,7 @@ const EmployerDashboard = ({ user }: { user: UserData }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-zinc-700 mb-1">Min Monthly Salary (USD $)</label>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Min Salary ($/mo)</label>
                     <input 
                       type="number" 
                       value={salaryMin}
@@ -1241,7 +1090,7 @@ const EmployerDashboard = ({ user }: { user: UserData }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-zinc-700 mb-1">Max Monthly Salary (USD $)</label>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Max Salary ($/mo)</label>
                     <input 
                       type="number" 
                       value={salaryMax}
@@ -1355,6 +1204,268 @@ const VADashboard = ({ user }: { user: UserData }) => {
   );
 };
 
+const TalentSearchPage = () => {
+  const [talents, setTalents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [salaryRange, setSalaryRange] = useState([2, 40]);
+  const [idProofMin, setIdProofMin] = useState(40);
+
+  useEffect(() => {
+    fetch('/api/talents')
+      .then(res => res.json())
+      .then(data => {
+        setTalents(data);
+        setLoading(false);
+      });
+  }, []);
+
+  const filteredTalents = talents.filter(t => {
+    const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) || 
+                         t.headline.toLowerCase().includes(search.toLowerCase()) ||
+                         t.bio.toLowerCase().includes(search.toLowerCase());
+    const matchesSalary = t.hourly_rate >= salaryRange[0] && t.hourly_rate <= salaryRange[1];
+    const matchesIdProof = t.id_proof_score >= idProofMin;
+    return matchesSearch && matchesSalary && matchesIdProof;
+  });
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Sidebar Filters */}
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-xl font-bold text-zinc-900 mb-6">Better Search Results?</h2>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Active Skill Filters</label>
+                <button className="w-full py-2 px-4 border-2 border-dashed border-zinc-200 rounded-xl text-zinc-400 text-sm font-bold hover:border-teal-500 hover:text-teal-600 transition-all flex items-center justify-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add skill filters
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Employment Type</label>
+                <select className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500">
+                  <option>Any</option>
+                  <option>Full-Time</option>
+                  <option>Part-Time</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Availability (Hours Per Day)</label>
+                <div className="flex items-center gap-2">
+                  <input type="number" defaultValue={2} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm outline-none" />
+                  <span className="text-zinc-400">-</span>
+                  <input type="number" defaultValue={12} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Hourly Salary (USD)</label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-xs">$</span>
+                    <input 
+                      type="number" 
+                      value={salaryRange[0]} 
+                      onChange={(e) => setSalaryRange([parseInt(e.target.value) || 0, salaryRange[1]])}
+                      className="w-full p-3 pl-6 bg-white border border-zinc-200 rounded-xl text-sm outline-none" 
+                    />
+                  </div>
+                  <span className="text-zinc-400">-</span>
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-xs">$</span>
+                    <input 
+                      type="number" 
+                      value={salaryRange[1]} 
+                      onChange={(e) => setSalaryRange([salaryRange[0], parseInt(e.target.value) || 0])}
+                      className="w-full p-3 pl-6 bg-white border border-zinc-200 rounded-xl text-sm outline-none" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">ID Proof Score</label>
+                <select 
+                  value={idProofMin}
+                  onChange={(e) => setIdProofMin(parseInt(e.target.value))}
+                  className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value={0}>Any</option>
+                  <option value={40}>40+</option>
+                  <option value={60}>60+</option>
+                  <option value={80}>80+</option>
+                </select>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-zinc-100">
+                {['Last Active', 'IQ Score', 'English Score'].map(filter => (
+                  <div key={filter}>
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">{filter}</label>
+                    <select className="w-full p-2 bg-white border border-zinc-200 rounded-lg text-xs outline-none">
+                      <option>Any</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-teal-50 p-6 rounded-3xl border border-teal-100">
+            <p className="text-sm text-teal-800 font-medium italic mb-4">
+              “I'm very thankful for what OFS and Onlinejobs.ph has done for me!”
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-teal-200 rounded-full" />
+              <div>
+                <div className="text-xs font-bold text-teal-900">Sam Sapp</div>
+                <button className="text-[10px] font-bold text-teal-600 uppercase tracking-wider hover:underline">See more real results</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="lg:col-span-3 space-y-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+              <input 
+                type="text"
+                placeholder="Search Profile Descriptions"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-white border border-zinc-200 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-teal-500 transition-all"
+              />
+            </div>
+            <div className="relative flex-1">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+              <input 
+                type="text"
+                placeholder="Search Name"
+                className="w-full pl-12 pr-4 py-4 bg-white border border-zinc-200 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-teal-500 transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mb-6">
+            <div className="text-sm text-zinc-500 font-medium">
+              Found <span className="font-bold text-zinc-900">{filteredTalents.length}</span> jobseekers.
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" className="w-4 h-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500" />
+              <span className="text-sm font-medium text-zinc-600">Include Hired Profiles</span>
+            </label>
+          </div>
+
+          <div className="space-y-6">
+            {loading ? (
+              [1, 2, 3].map(i => (
+                <div key={i} className="bg-white p-8 rounded-3xl border border-zinc-200 animate-pulse h-64" />
+              ))
+            ) : filteredTalents.length === 0 ? (
+              <div className="bg-white p-12 rounded-3xl border border-zinc-200 text-center">
+                <Search className="w-12 h-12 text-zinc-200 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-zinc-900 mb-2">No jobseekers found</h3>
+                <p className="text-zinc-500">Try adjusting your filters or search terms.</p>
+              </div>
+            ) : (
+              filteredTalents.map((talent) => (
+                <motion.div 
+                  key={talent.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-md transition-all group"
+                >
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-20 h-20 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center font-bold text-2xl border border-teal-100">
+                        {talent.name.charAt(0)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+                        <div>
+                          <h3 className="text-2xl font-bold text-zinc-900 group-hover:text-teal-600 transition-colors">{talent.name}</h3>
+                          <p className="text-zinc-500 font-medium">{talent.headline}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button className="px-4 py-2 text-xs font-bold text-zinc-400 uppercase tracking-wider hover:text-teal-600 transition-colors">PIN</button>
+                          <button className="px-4 py-2 bg-teal-50 text-teal-600 rounded-xl text-xs font-bold hover:bg-teal-100 transition-colors">view profile</button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-4 mb-6">
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          {talent.id_proof_score} ID PROOF
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
+                          <Clock className="w-3.5 h-3.5" />
+                          LOOKING FOR {talent.availability}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
+                          <DollarSign className="w-3.5 h-3.5" />
+                          at ${talent.hourly_rate}/hour (${talent.monthly_salary}/month)
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 py-4 border-y border-zinc-50">
+                        <div>
+                          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Education</div>
+                          <div className="text-xs font-bold text-zinc-700">{talent.education}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Last Active</div>
+                          <div className="text-xs font-bold text-zinc-700">{talent.last_active}</div>
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Profile Description</div>
+                        <p className="text-sm text-zinc-600 leading-relaxed line-clamp-2">{talent.bio}</p>
+                      </div>
+
+                      <div>
+                        <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Top Skills</div>
+                        <div className="flex flex-wrap gap-2">
+                          {talent.skills?.map((skill: any, idx: number) => (
+                            <span key={idx} className="px-3 py-1.5 bg-zinc-50 text-zinc-600 rounded-lg text-xs font-bold border border-zinc-100">
+                              {skill.skill_name}: <span className="text-zinc-400">{skill.years_experience}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-center gap-2 mt-12">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
+              <button key={p} className={cn("w-10 h-10 rounded-xl text-sm font-bold transition-all", p === 1 ? "bg-teal-600 text-white shadow-lg shadow-teal-100" : "bg-white text-zinc-500 border border-zinc-200 hover:border-teal-500 hover:text-teal-600")}>
+                {p}
+              </button>
+            ))}
+            <button className="w-10 h-10 rounded-xl bg-white text-zinc-500 border border-zinc-200 hover:border-teal-500 hover:text-teal-600 flex items-center justify-center">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const JobsPage = ({ user }: { user: UserData | null }) => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -1405,16 +1516,16 @@ const JobsPage = ({ user }: { user: UserData | null }) => {
         <div className="w-full md:w-72 space-y-8">
           <div>
             <h3 className="font-bold text-zinc-900 mb-4 flex items-center gap-2 uppercase text-xs tracking-widest">
-              Filter by skills:
+              Filter by skills
             </h3>
-            <div className="mb-2 text-[10px] font-bold text-teal-600 uppercase">SELECT UP TO 3 SKILLS</div>
+            <div className="mb-2 text-[10px] font-bold text-teal-600 uppercase">Select up to 3 skills</div>
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
               <input 
                 type="text" 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search for skills"
+                placeholder="Search jobs or skills..."
                 className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-xl outline-none focus:ring-2 focus:ring-teal-500 text-sm"
               />
             </div>
@@ -1606,7 +1717,7 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/jobs" element={<JobsPage user={user} />} />
             <Route path="/jobs/:id" element={<JobDetailsPage user={user} />} />
-            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/talents" element={<TalentSearchPage />} />
             <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage onLogin={handleLogin} />} />
             <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage onLogin={handleLogin} />} />
             
