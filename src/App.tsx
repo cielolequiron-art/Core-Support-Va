@@ -28,6 +28,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { supabase } from './lib/supabase';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -313,6 +314,7 @@ const Navbar = ({ user, onLogout }: { user: UserData | null; onLogout: () => voi
             
             {user ? (
               <div className="flex items-center gap-4 ml-4">
+                <span className="text-xs text-zinc-400 font-medium">{user.email}</span>
                 <Link 
                   to={user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/va'}
                   className="flex items-center gap-2 text-sm font-medium text-zinc-700 bg-zinc-100 px-3 py-1.5 rounded-full hover:bg-zinc-200 transition-colors"
@@ -374,9 +376,15 @@ const Navbar = ({ user, onLogout }: { user: UserData | null; onLogout: () => voi
   );
 };
 
-const LandingPage = () => {
+const LandingPage = ({ user }: { user: UserData | null }) => {
   return (
     <div className="min-h-screen">
+      {/* Welcome Message for Logged In Users */}
+      {user && (
+        <div className="bg-teal-600 text-white py-3 text-center font-bold">
+          Welcome, {user.email}! You are successfully logged in.
+        </div>
+      )}
       {/* Hero */}
       <section className="relative py-20 overflow-hidden bg-zinc-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -485,30 +493,41 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login form submitted', { email });
+    setLoading(true);
+    setError('');
+    console.log('Login attempt with Supabase', { email });
+    
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      console.log('Login response status:', res.status);
-      const data = await res.json();
-      if (res.ok) {
+
+      if (authError) throw authError;
+
+      if (data.user) {
         console.log('Login successful', data.user);
-        onLogin(data.user);
+        // Map Supabase user to our UserData
+        const userData: UserData = {
+          id: data.user.id,
+          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
+          email: data.user.email || '',
+          role: (data.user.user_metadata?.role as UserRole) || 'va',
+          status: 'approved'
+        };
+        onLogin(userData);
         navigate('/');
-      } else {
-        console.error('Login failed:', data.error);
-        setError(data.error);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError('Something went wrong');
+      setError(err.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -527,13 +546,6 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</div>}
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-6">
-            <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2">Demo Credentials</h4>
-            <div className="space-y-1 text-xs text-indigo-900">
-              <p><strong>VA:</strong> va@demo.com / demo</p>
-              <p><strong>Employer:</strong> emp@demo.com / demo</p>
-            </div>
-          </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1">Email Address</label>
             <input 
@@ -556,8 +568,11 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
               required
             />
           </div>
-          <button className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-md">
-            Log In
+          <button 
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-md disabled:opacity-50"
+          >
+            {loading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
         
@@ -575,30 +590,46 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('va');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Register form submitted', { email, role });
+    setLoading(true);
+    setError('');
+    console.log('Register attempt with Supabase', { email, role });
+    
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role })
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            role: role
+          }
+        }
       });
-      console.log('Register response status:', res.status);
-      const data = await res.json();
-      if (res.ok) {
-        console.log('Register successful', data.user);
-        onLogin(data.user);
+
+      if (authError) throw authError;
+
+      if (data.user) {
+        console.log('Registration successful', data.user);
+        const userData: UserData = {
+          id: data.user.id,
+          name: name,
+          email: email,
+          role: role,
+          status: 'approved'
+        };
+        onLogin(userData);
         navigate('/');
-      } else {
-        console.error('Register failed:', data.error);
-        setError(data.error);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Register error:', err);
-      setError('Something went wrong');
+      setError(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -675,8 +706,11 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
               required
             />
           </div>
-          <button className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-md">
-            Create Account
+          <button 
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-md disabled:opacity-50"
+          >
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
         
@@ -1893,21 +1927,47 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('vahub_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const userData: UserData = {
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          role: (session.user.user_metadata?.role as UserRole) || 'va',
+          status: 'approved'
+        };
+        setUser(userData);
+      }
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const userData: UserData = {
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          role: (session.user.user_metadata?.role as UserRole) || 'va',
+          status: 'approved'
+        };
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleLogin = (userData: UserData) => {
     setUser(userData);
-    localStorage.setItem('vahub_user', JSON.stringify(userData));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('vahub_user');
   };
 
   if (loading) return null;
@@ -1919,7 +1979,7 @@ export default function App() {
         
         <main>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<LandingPage user={user} />} />
             <Route path="/jobs" element={<JobsPage user={user} />} />
             <Route path="/jobs/:id" element={<JobDetailsPage user={user} />} />
             <Route path="/talents" element={<TalentSearchPage />} />
