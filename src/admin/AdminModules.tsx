@@ -174,7 +174,7 @@ export const AdminAuditLogs = () => {
 
   useEffect(() => {
     const fetchLogs = async () => {
-      const { data } = await supabase.from('admin_logs').select('*').order('created_at', { ascending: false }).limit(100);
+      const { data } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
       if (data) setLogs(data as AdminLog[]);
       setLoading(false);
     };
@@ -210,7 +210,7 @@ export const AdminAuditLogs = () => {
                   </div>
                 </td>
                 <td className="px-8 py-5">
-                  <span className="px-2 py-0.5 bg-zinc-100 text-zinc-600 rounded text-[10px] font-bold uppercase tracking-wider">{log.action}</span>
+                  <span className="px-2 py-0.5 bg-zinc-100 text-zinc-600 rounded text-[10px] font-bold uppercase tracking-wider">{log.action_type}</span>
                 </td>
                 <td className="px-8 py-5">
                   <div className="text-xs font-bold text-zinc-700 uppercase tracking-widest">{log.target_type}</div>

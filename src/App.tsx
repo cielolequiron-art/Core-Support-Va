@@ -78,8 +78,42 @@ import {
   Subscription, 
   Payment, 
   Report, 
-  AdminLog 
+  AdminLog,
+  Permission
 } from './types';
+
+// RBAC Helper
+export const hasPermission = (user: UserData | null, permission: Permission): boolean => {
+  if (!user) return false;
+  if (user.role === 'ADMIN') return true; // Super admin has all permissions
+  
+  // Define default permissions per role if not explicitly set on user
+  const rolePermissions: Record<UserRole, Permission[]> = {
+    'ADMIN': ['can_manage_users', 'can_manage_jobs', 'can_manage_subscriptions', 'view_audit_logs', 'can_manage_settings', 'can_view_analytics'],
+    'MODERATOR': ['can_manage_jobs', 'view_audit_logs'],
+    'SUPPORT': ['can_manage_users', 'view_audit_logs'],
+    'EMPLOYER': ['can_post_jobs', 'can_message_vas'],
+    'JOB_SEEKER': ['can_apply_jobs', 'can_edit_profile']
+  };
+
+  const userPermissions = user.permissions || rolePermissions[user.role] || [];
+  return userPermissions.includes(permission);
+};
+
+// Audit Log Helper
+export const logAdminAction = async (adminId: string, actionType: string, targetType: string, targetId: string, details?: any) => {
+  try {
+    await supabase.from('audit_logs').insert({
+      admin_id: adminId,
+      action_type: actionType,
+      target_type: targetType,
+      target_id: targetId,
+      details: details
+    });
+  } catch (err) {
+    console.error('Failed to log admin action:', err);
+  }
+};
 
 // Admin Components
 import { AdminOverview } from './admin/AdminOverview';
@@ -1093,10 +1127,23 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
 
 // --- Dashboards ---
 
-const AdminGuard = ({ user, children }: { user: UserData | null, children: React.ReactNode }) => {
-  if (!user || user.role !== 'ADMIN') {
+const AdminGuard = ({ user, permission, children }: { user: UserData | null, permission?: Permission, children: React.ReactNode }) => {
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR' && user.role !== 'SUPPORT')) {
     return <Navigate to="/login" replace />;
   }
+  
+  if (permission && !hasPermission(user, permission)) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <Lock className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-zinc-900 mb-2">Access Denied</h2>
+          <p className="text-zinc-500">You don't have permission to view this module.</p>
+        </div>
+      </div>
+    );
+  }
+  
   return <>{children}</>;
 };
 
@@ -1106,17 +1153,19 @@ const AdminLayout = ({ user }: { user: UserData }) => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
-    { icon: Users, label: 'Users', path: '/admin/users' },
-    { icon: Briefcase, label: 'Employers', path: '/admin/employers' },
-    { icon: FileText, label: 'Job Postings', path: '/admin/jobs' },
-    { icon: Zap, label: 'Subscriptions', path: '/admin/subscriptions' },
-    { icon: DollarSign, label: 'Payments', path: '/admin/payments' },
-    { icon: AlertTriangle, label: 'Reports', path: '/admin/reports' },
-    { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' },
-    { icon: Activity, label: 'Audit Logs', path: '/admin/audit-logs' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard', permission: 'can_view_analytics' as Permission },
+    { icon: Users, label: 'Users', path: '/admin/users', permission: 'can_manage_users' as Permission },
+    { icon: Briefcase, label: 'Employers', path: '/admin/employers', permission: 'can_manage_users' as Permission },
+    { icon: FileText, label: 'Job Postings', path: '/admin/jobs', permission: 'can_manage_jobs' as Permission },
+    { icon: Zap, label: 'Subscriptions', path: '/admin/subscriptions', permission: 'can_manage_subscriptions' as Permission },
+    { icon: DollarSign, label: 'Payments', path: '/admin/payments', permission: 'can_manage_subscriptions' as Permission },
+    { icon: AlertTriangle, label: 'Reports', path: '/admin/reports', permission: 'can_manage_jobs' as Permission },
+    { icon: BarChart3, label: 'Analytics', path: '/admin/analytics', permission: 'can_view_analytics' as Permission },
+    { icon: Settings, label: 'Settings', path: '/admin/settings', permission: 'can_manage_settings' as Permission },
+    { icon: Activity, label: 'Audit Logs', path: '/admin/audit-logs', permission: 'view_audit_logs' as Permission },
   ];
+
+  const filteredMenuItems = menuItems.filter(item => hasPermission(user, item.permission));
 
   return (
     <div className="flex h-screen bg-zinc-50 overflow-hidden">
@@ -1144,7 +1193,7 @@ const AdminLayout = ({ user }: { user: UserData }) => {
         </div>
 
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto py-4">
-          {menuItems.map((item) => {
+          {filteredMenuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
@@ -2206,18 +2255,18 @@ export default function App() {
             <Route path="/assessments" element={<SkillAssessmentPage user={user} />} />
             
             {/* Admin Routes */}
-            <Route path="/admin" element={<AdminGuard user={user}><AdminLayout user={user} /></AdminGuard>}>
+            <Route path="/admin" element={<AdminGuard user={user}><AdminLayout user={user!} /></AdminGuard>}>
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<AdminOverview />} />
-              <Route path="users" element={<AdminUsers admin={user!} />} />
-              <Route path="employers" element={<AdminUsers admin={user!} filterRole="EMPLOYER" />} />
-              <Route path="jobs" element={<AdminJobs admin={user!} />} />
-              <Route path="subscriptions" element={<AdminSubscriptions />} />
-              <Route path="payments" element={<AdminPayments />} />
-              <Route path="reports" element={<AdminReports admin={user!} />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
-              <Route path="settings" element={<AdminSettings />} />
-              <Route path="audit-logs" element={<AdminAuditLogs />} />
+              <Route path="dashboard" element={<AdminGuard user={user} permission="can_view_analytics"><AdminOverview /></AdminGuard>} />
+              <Route path="users" element={<AdminGuard user={user} permission="can_manage_users"><AdminUsers admin={user!} /></AdminGuard>} />
+              <Route path="employers" element={<AdminGuard user={user} permission="can_manage_users"><AdminUsers admin={user!} filterRole="EMPLOYER" /></AdminGuard>} />
+              <Route path="jobs" element={<AdminGuard user={user} permission="can_manage_jobs"><AdminJobs admin={user!} /></AdminGuard>} />
+              <Route path="subscriptions" element={<AdminGuard user={user} permission="can_manage_subscriptions"><AdminSubscriptions /></AdminGuard>} />
+              <Route path="payments" element={<AdminGuard user={user} permission="can_manage_subscriptions"><AdminPayments /></AdminGuard>} />
+              <Route path="reports" element={<AdminGuard user={user} permission="can_manage_jobs"><AdminReports admin={user!} /></AdminGuard>} />
+              <Route path="analytics" element={<AdminGuard user={user} permission="can_view_analytics"><AdminAnalytics /></AdminGuard>} />
+              <Route path="settings" element={<AdminGuard user={user} permission="can_manage_settings"><AdminSettings /></AdminGuard>} />
+              <Route path="audit-logs" element={<AdminGuard user={user} permission="view_audit_logs"><AdminAuditLogs /></AdminGuard>} />
             </Route>
 
             <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage onLogin={handleLogin} />} />

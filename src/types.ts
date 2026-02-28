@@ -3,6 +3,18 @@ export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'PENDING';
 export type JobStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'FLAGGED' | 'EXPIRED';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'none';
 
+export type Permission = 
+  | 'can_manage_users' 
+  | 'can_manage_jobs' 
+  | 'can_manage_subscriptions' 
+  | 'view_audit_logs' 
+  | 'can_manage_settings' 
+  | 'can_view_analytics'
+  | 'can_post_jobs'
+  | 'can_message_vas'
+  | 'can_apply_jobs'
+  | 'can_edit_profile';
+
 export interface UserData {
   id: string;
   name: string;
@@ -15,6 +27,7 @@ export interface UserData {
   created_at: string;
   avatar_url?: string;
   admin_notes?: string;
+  permissions?: Permission[];
   subscription?: {
     plan: string;
     status: string;
@@ -73,15 +86,15 @@ export interface Report {
 export interface AdminLog {
   id: string;
   admin_id: string;
-  action: string;
+  action_type: string;
   target_type: string;
   target_id: string;
+  details?: any;
   created_at: string;
-  details?: string;
 }
 
 export interface Role {
   id: string;
-  name: UserRole;
-  permissions: string[];
+  name: string;
+  permissions: Permission[];
 }
