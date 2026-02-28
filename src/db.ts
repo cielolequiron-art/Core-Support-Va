@@ -12,7 +12,7 @@ db.exec(`
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'suspended')),
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'suspended', 'ACTIVE', 'SUSPENDED', 'BANNED', 'PENDING')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -58,7 +58,7 @@ db.exec(`
     salary_max REAL,
     job_type TEXT,
     experience_level TEXT,
-    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected', 'closed')),
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected', 'closed', 'PENDING', 'APPROVED', 'REJECTED', 'FLAGGED', 'EXPIRED')),
     is_featured BOOLEAN DEFAULT 0,
     rejection_reason TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -80,7 +80,7 @@ db.exec(`
     job_id TEXT NOT NULL,
     va_id TEXT NOT NULL,
     cover_letter TEXT,
-    status TEXT DEFAULT 'applied' CHECK(status IN ('applied', 'shortlisted', 'rejected', 'hired')),
+    status TEXT DEFAULT 'applied' CHECK(status IN ('applied', 'shortlisted', 'rejected', 'hired', 'APPLIED', 'SHORTLISTED', 'REJECTED', 'HIRED')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (job_id) REFERENCES jobs(id),
     FOREIGN KEY (va_id) REFERENCES users(id)
@@ -122,6 +122,13 @@ db.exec(`
     skill_name TEXT NOT NULL,
     years_experience TEXT,
     FOREIGN KEY (va_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS job_skills (
+    id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL,
+    skill_name TEXT NOT NULL,
+    FOREIGN KEY (job_id) REFERENCES jobs(id)
   );
 `);
 
@@ -360,20 +367,23 @@ if (sampleJobsCount.count <= 1) { // Only seed if empty or just the one from pre
   }
 
   // Seed skills for sample jobs
-  const insertSkill = db.prepare('INSERT INTO job_skills (id, job_id, skill_name) VALUES (?, ?, ?)');
-  const skillsData = [
-    { jobId: 'j1', skills: ['Outbound Sales', 'Cold Calling', 'Sales'] },
-    { jobId: 'j2', skills: ['Appointment Setting', 'Sales', 'Outbound Calls'] },
-    { jobId: 'j3', skills: ['Inbound Sales', 'Outbound Sales', 'Sales'] },
-    { jobId: 'j4', skills: ['Real Estate Marketing', 'Customer Support', 'Property Management'] },
-    { jobId: 'j10', skills: ['Video Editing', 'Social Media', 'AI Tools'] },
-    { jobId: 'j12', skills: ['React JS', 'Next JS', 'Supabase'] },
-    { jobId: 'j13', skills: ['Photoshop', 'Graphic Design', 'Canva'] },
-  ];
+  const jobSkillsCount = db.prepare('SELECT count(*) as count FROM job_skills').get() as { count: number };
+  if (jobSkillsCount.count === 0) {
+    const insertSkill = db.prepare('INSERT INTO job_skills (id, job_id, skill_name) VALUES (?, ?, ?)');
+    const skillsData = [
+      { jobId: 'j1', skills: ['Outbound Sales', 'Cold Calling', 'Sales'] },
+      { jobId: 'j2', skills: ['Appointment Setting', 'Sales', 'Outbound Calls'] },
+      { jobId: 'j3', skills: ['Inbound Sales', 'Outbound Sales', 'Sales'] },
+      { jobId: 'j4', skills: ['Real Estate Marketing', 'Customer Support', 'Property Management'] },
+      { jobId: 'j10', skills: ['Video Editing', 'Social Media', 'AI Tools'] },
+      { jobId: 'j12', skills: ['React JS', 'Next JS', 'Supabase'] },
+      { jobId: 'j13', skills: ['Photoshop', 'Graphic Design', 'Canva'] },
+    ];
 
-  for (const data of skillsData) {
-    for (const skill of data.skills) {
-      insertSkill.run(uuidv4(), data.jobId, skill);
+    for (const data of skillsData) {
+      for (const skill of data.skills) {
+        insertSkill.run(uuidv4(), data.jobId, skill);
+      }
     }
   }
 }

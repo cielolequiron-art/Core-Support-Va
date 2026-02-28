@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useParams, Outlet, useLocation } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   Search, 
@@ -22,27 +22,328 @@ import {
   ChevronRight,
   MapPin,
   Calendar,
-  Send
+  Send,
+  CreditCard,
+  Award,
+  Trophy,
+  Zap,
+  Star,
+  FileText,
+  Activity,
+  AlertTriangle,
+  Ban,
+  Eye,
+  MoreVertical,
+  Filter,
+  Download,
+  Trash2,
+  Lock,
+  Unlock,
+  RefreshCw,
+  TrendingUp,
+  PieChart,
+  Layers,
+  Globe,
+  Mail,
+  Bell
 } from 'lucide-react';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area,
+  BarChart,
+  Bar,
+  Cell,
+  PieChart as RePieChart,
+  Pie
+} from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { supabase } from './lib/supabase';
+import { 
+  UserData, 
+  UserRole, 
+  UserStatus, 
+  JobStatus, 
+  SubscriptionStatus, 
+  Job, 
+  Subscription, 
+  Payment, 
+  Report, 
+  AdminLog 
+} from './types';
+
+// Admin Components
+import { AdminOverview } from './admin/AdminOverview';
+import { AdminUsers } from './admin/AdminUsers';
+import { AdminJobs } from './admin/AdminJobs';
+import { AdminSubscriptions, AdminPayments } from './admin/AdminBilling';
+import { AdminReports, AdminSettings, AdminAuditLogs } from './admin/AdminModules';
+import { AdminAnalytics } from './admin/AdminAnalytics';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const SubscriptionPage = ({ user }: { user: UserData | null }) => {
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  if (!user) return <Navigate to="/login" />;
+
+  const currentPlan = user.subscription?.plan || 'Free';
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-zinc-900 mb-2">Manage Subscription</h1>
+        <p className="text-zinc-500">View and manage your current billing plan.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-6">
+          <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Current Plan</div>
+                <div className="text-2xl font-black text-indigo-600 uppercase">{currentPlan}</div>
+              </div>
+              <div className="bg-emerald-50 text-emerald-600 px-4 py-1 rounded-full text-xs font-bold">
+                Active
+              </div>
+            </div>
+
+            <div className="space-y-4 mb-8">
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-500">Billing Cycle</span>
+                <span className="font-bold text-zinc-900">Monthly</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-500">Next Payment</span>
+                <span className="font-bold text-zinc-900">{user.subscription?.periodEnd || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-500">Payment Method</span>
+                <span className="flex items-center gap-2 font-bold text-zinc-900">
+                  <CreditCard className="w-4 h-4" /> **** 4242
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={() => navigate('/pricing')}
+                className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+              >
+                Upgrade Plan
+              </button>
+              <button className="flex-1 bg-white text-red-600 border border-red-100 py-3 rounded-xl font-bold hover:bg-red-50 transition-all">
+                Cancel Subscription
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm">
+            <h3 className="text-lg font-bold text-zinc-900 mb-4">Billing History</h3>
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex items-center justify-between py-3 border-b border-zinc-50 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-zinc-50 rounded-lg">
+                      <FileText className="w-4 h-4 text-zinc-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-zinc-900">Invoice #VA-2026-00{i}</div>
+                      <div className="text-xs text-zinc-500">Feb {28 - i}, 2026</div>
+                    </div>
+                  </div>
+                  <div className="text-sm font-bold text-zinc-900">$69.00</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-indigo-600 p-8 rounded-3xl text-white shadow-xl shadow-indigo-100">
+            <Zap className="w-8 h-8 mb-4 text-indigo-200" />
+            <h3 className="text-xl font-bold mb-2">Need more power?</h3>
+            <p className="text-indigo-100 text-sm leading-relaxed mb-6">
+              Upgrade to Premium for AI Matching and unlimited background checks.
+            </p>
+            <button 
+              onClick={() => navigate('/pricing')}
+              className="w-full bg-white text-indigo-600 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-all"
+            >
+              View Premium
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SkillAssessmentPage = ({ user }: { user: UserData | null }) => {
+  const [assessments, setAssessments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeAssessment, setActiveAssessment] = useState<any>(null);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [result, setResult] = useState<any>(null);
+
+  useEffect(() => {
+    // Mock data for assessments
+    const mockAssessments = [
+      {
+        id: '1',
+        title: 'Data Entry Proficiency',
+        category: 'Administrative',
+        questions: [
+          { q: 'What is the most important factor in data entry?', options: ['Speed', 'Accuracy', 'Design', 'Creativity'], a: 'Accuracy' },
+          { q: 'Which tool is best for managing large datasets?', options: ['Word', 'Excel', 'PowerPoint', 'Notepad'], a: 'Excel' }
+        ]
+      },
+      {
+        id: '2',
+        title: 'Social Media Strategy',
+        category: 'Marketing',
+        questions: [
+          { q: 'Which platform is best for B2B networking?', options: ['TikTok', 'Instagram', 'LinkedIn', 'Snapchat'], a: 'LinkedIn' },
+          { q: 'What does ROI stand for?', options: ['Rate of Interest', 'Return on Investment', 'Risk of Injury', 'Range of Influence'], a: 'Return on Investment' }
+        ]
+      }
+    ];
+    setAssessments(mockAssessments);
+    setLoading(false);
+  }, []);
+
+  const startAssessment = (assessment: any) => {
+    setActiveAssessment(assessment);
+    setCurrentQuestion(0);
+    setAnswers([]);
+    setResult(null);
+  };
+
+  const handleAnswer = (answer: string) => {
+    const newAnswers = [...answers, answer];
+    setAnswers(newAnswers);
+
+    if (currentQuestion < activeAssessment.questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else {
+      // Calculate result
+      let correct = 0;
+      newAnswers.forEach((ans, i) => {
+        if (ans === activeAssessment.questions[i].a) correct++;
+      });
+      const score = (correct / activeAssessment.questions.length) * 100;
+      setResult({ score, passed: score >= 80 });
+    }
+  };
+
+  if (!user) return <Navigate to="/login" />;
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-12">
+      <div className="mb-12 text-center">
+        <h1 className="text-4xl font-bold text-zinc-900 mb-4">Skill Verification Center</h1>
+        <p className="text-zinc-500 max-w-2xl mx-auto">
+          Pass assessments to earn verified badges on your profile and stand out to employers.
+        </p>
+      </div>
+
+      {activeAssessment ? (
+        <div className="max-w-2xl mx-auto">
+          {result ? (
+            <div className="bg-white p-12 rounded-3xl border border-zinc-200 shadow-xl text-center">
+              {result.passed ? (
+                <>
+                  <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Trophy className="w-10 h-10" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-zinc-900 mb-2">Assessment Passed!</h2>
+                  <p className="text-zinc-500 mb-8">Congratulations! You've earned the <span className="font-bold text-zinc-900">{activeAssessment.title}</span> badge.</p>
+                  <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl inline-flex items-center gap-3 mb-8">
+                    <Award className="w-6 h-6 text-emerald-600" />
+                    <span className="text-emerald-700 font-bold uppercase tracking-wider text-xs">Verified Skill Badge Awarded</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <X className="w-10 h-10" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-zinc-900 mb-2">Assessment Failed</h2>
+                  <p className="text-zinc-500 mb-8">You scored {result.score}%. You need 80% to pass. You can retake this test in 24 hours.</p>
+                </>
+              )}
+              <button 
+                onClick={() => setActiveAssessment(null)}
+                className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all"
+              >
+                Back to Assessments
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-xl">
+              <div className="flex items-center justify-between mb-8">
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                  Question {currentQuestion + 1} of {activeAssessment.questions.length}
+                </span>
+                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                  {activeAssessment.category}
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900 mb-8">
+                {activeAssessment.questions[currentQuestion].q}
+              </h3>
+              <div className="space-y-3">
+                {activeAssessment.questions[currentQuestion].options.map((opt: string) => (
+                  <button 
+                    key={opt}
+                    onClick={() => handleAnswer(opt)}
+                    className="w-full p-4 text-left border border-zinc-200 rounded-2xl hover:border-indigo-600 hover:bg-indigo-50 transition-all font-medium text-zinc-700"
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {assessments.map(assessment => (
+            <div key={assessment.id} className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-md transition-all group">
+              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Star className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900 mb-2">{assessment.title}</h3>
+              <p className="text-sm text-zinc-500 mb-6">{assessment.category} • {assessment.questions.length} Questions</p>
+              <button 
+                onClick={() => startAssessment(assessment)}
+                className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+              >
+                Start Test
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // --- Types ---
-type UserRole = 'admin' | 'employer' | 'va';
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  status: string;
-}
 
 // --- Components ---
 
@@ -60,7 +361,7 @@ const ApplyModal = ({ job, user, onClose }: { job: any, user: UserData | null, o
       navigate('/login');
       return;
     }
-    if (user.role !== 'va') {
+    if (user.role !== 'JOB_SEEKER') {
       alert('Only Virtual Assistants can apply for jobs.');
       return;
     }
@@ -316,15 +617,32 @@ const Navbar = ({ user, onLogout }: { user: UserData | null; onLogout: () => voi
               <div className="flex items-center gap-4 ml-4">
                 <span className="text-xs text-zinc-400 font-medium">{user.email}</span>
                 <Link 
-                  to={user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/va'}
+                  to={user.role === 'ADMIN' ? '/admin' : user.role === 'EMPLOYER' ? '/employer' : '/va'}
                   className="flex items-center gap-2 text-sm font-medium text-zinc-700 bg-zinc-100 px-3 py-1.5 rounded-full hover:bg-zinc-200 transition-colors"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
                 </Link>
+                <Link 
+                  to="/subscription"
+                  className="text-zinc-500 hover:text-indigo-600 transition-colors"
+                  title="Manage Subscription"
+                >
+                  <CreditCard className="w-5 h-5" />
+                </Link>
+                {user.role === 'JOB_SEEKER' && (
+                  <Link 
+                    to="/assessments"
+                    className="text-zinc-500 hover:text-amber-600 transition-colors"
+                    title="Skill Assessments"
+                  >
+                    <Award className="w-5 h-5" />
+                  </Link>
+                )}
                 <button 
                   onClick={onLogout}
                   className="text-zinc-500 hover:text-red-600 transition-colors"
+                  title="Logout"
                 >
                   <LogOut className="w-5 h-5" />
                 </button>
@@ -493,6 +811,7 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -500,6 +819,7 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setMessage('');
     console.log('Login attempt', { email });
 
     // Demo Bypass
@@ -509,8 +829,11 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
         id: 'demo-va-id',
         name: 'Demo VA',
         email: 'demova@demo.com',
-        role: 'va',
-        status: 'approved'
+        role: 'JOB_SEEKER',
+        status: 'ACTIVE',
+        subscription_status: 'none',
+        email_verified: true,
+        created_at: new Date().toISOString()
       };
       onLogin(demoUser);
       navigate('/');
@@ -533,8 +856,11 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
           id: data.user.id,
           name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
           email: data.user.email || '',
-          role: (data.user.user_metadata?.role as UserRole) || 'va',
-          status: 'approved'
+          role: (data.user.user_metadata?.role as UserRole) || 'JOB_SEEKER',
+          status: 'ACTIVE',
+          subscription_status: 'none',
+          email_verified: !!data.user.email_confirmed_at,
+          created_at: data.user.created_at
         };
         onLogin(userData);
         navigate('/');
@@ -560,6 +886,7 @@ const LoginPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
         </div>
         
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</div>}
+        {message && <div className="bg-emerald-50 text-emerald-600 p-3 rounded-lg text-sm mb-4">{message}</div>}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -620,8 +947,9 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('va');
+  const [role, setRole] = useState<UserRole>('JOB_SEEKER');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -629,6 +957,7 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setMessage('');
     console.log('Register attempt with Supabase', { email, role });
     
     try {
@@ -647,15 +976,22 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
 
       if (data.user) {
         console.log('Registration successful', data.user);
-        const userData: UserData = {
-          id: data.user.id,
-          name: name,
-          email: email,
-          role: role,
-          status: 'approved'
-        };
-        onLogin(userData);
-        navigate('/');
+        if (data.session) {
+          const userData: UserData = {
+            id: data.user.id,
+            name: name,
+            email: email,
+            role: role,
+            status: 'ACTIVE',
+            subscription_status: 'none',
+            email_verified: !!data.user.email_confirmed_at,
+            created_at: data.user.created_at
+          };
+          onLogin(userData);
+          navigate('/');
+        } else {
+          setMessage('Registration successful! Please check your email to confirm your account before logging in.');
+        }
       }
     } catch (err: any) {
       console.error('Register error:', err);
@@ -678,15 +1014,16 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
         </div>
         
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</div>}
+        {message && <div className="bg-emerald-50 text-emerald-600 p-3 rounded-lg text-sm mb-4">{message}</div>}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3 mb-4">
             <button 
               type="button"
-              onClick={() => setRole('va')}
+              onClick={() => setRole('JOB_SEEKER')}
               className={cn(
                 "py-3 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-1",
-                role === 'va' ? "border-indigo-600 bg-indigo-50 text-indigo-600" : "border-zinc-100 text-zinc-500 hover:border-zinc-200"
+                role === 'JOB_SEEKER' ? "border-indigo-600 bg-indigo-50 text-indigo-600" : "border-zinc-100 text-zinc-500 hover:border-zinc-200"
               )}
             >
               <User className="w-5 h-5" />
@@ -694,10 +1031,10 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
             </button>
             <button 
               type="button"
-              onClick={() => setRole('employer')}
+              onClick={() => setRole('EMPLOYER')}
               className={cn(
                 "py-3 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-1",
-                role === 'employer' ? "border-indigo-600 bg-indigo-50 text-indigo-600" : "border-zinc-100 text-zinc-500 hover:border-zinc-200"
+                role === 'EMPLOYER' ? "border-indigo-600 bg-indigo-50 text-indigo-600" : "border-zinc-100 text-zinc-500 hover:border-zinc-200"
               )}
             >
               <Briefcase className="w-5 h-5" />
@@ -756,283 +1093,118 @@ const RegisterPage = ({ onLogin }: { onLogin: (user: UserData) => void }) => {
 
 // --- Dashboards ---
 
-const AdminDashboard = ({ user }: { user: UserData }) => {
-  const [stats, setStats] = useState<any>(null);
-  const [pendingJobs, setPendingJobs] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [logs, setLogs] = useState<any[]>([]);
-  const [userSearch, setUserSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'logs'>('overview');
-  const [rejectingJobId, setRejectingJobId] = useState<string | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
+const AdminGuard = ({ user, children }: { user: UserData | null, children: React.ReactNode }) => {
+  if (!user || user.role !== 'ADMIN') {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
 
-  const fetchData = useCallback(() => {
-    fetch('/api/admin/stats').then(res => res.json()).then(setStats);
-    fetch('/api/admin/pending-jobs').then(res => res.json()).then(setPendingJobs);
-    fetch(`/api/admin/users?search=${userSearch}`).then(res => res.json()).then(setUsers);
-    fetch('/api/admin/logs').then(res => res.json()).then(setLogs);
-  }, [userSearch]);
+const AdminLayout = ({ user }: { user: UserData }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const approveJob = async (id: string) => {
-    await fetch('/api/admin/approve-job', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, admin_id: user.id })
-    });
-    fetchData();
-  };
-
-  const rejectJob = async () => {
-    if (!rejectingJobId) return;
-    await fetch('/api/admin/reject-job', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: rejectingJobId, reason: rejectionReason, admin_id: user.id })
-    });
-    setRejectingJobId(null);
-    setRejectionReason('');
-    fetchData();
-  };
-
-  const updateUserStatus = async (id: string, status: string) => {
-    await fetch('/api/admin/update-user-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status, admin_id: user.id })
-    });
-    fetchData();
-  };
-
-  const deleteUser = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    await fetch('/api/admin/delete-user', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, admin_id: user.id })
-    });
-    fetchData();
-  };
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
+    { icon: Users, label: 'Users', path: '/admin/users' },
+    { icon: Briefcase, label: 'Employers', path: '/admin/employers' },
+    { icon: FileText, label: 'Job Postings', path: '/admin/jobs' },
+    { icon: Zap, label: 'Subscriptions', path: '/admin/subscriptions' },
+    { icon: DollarSign, label: 'Payments', path: '/admin/payments' },
+    { icon: AlertTriangle, label: 'Reports', path: '/admin/reports' },
+    { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
+    { icon: Settings, label: 'Settings', path: '/admin/settings' },
+    { icon: Activity, label: 'Audit Logs', path: '/admin/audit-logs' },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <h1 className="text-3xl font-bold text-zinc-900">Admin Control Center</h1>
-        <div className="flex bg-white p-1 rounded-xl border border-zinc-200">
+    <div className="flex h-screen bg-zinc-50 overflow-hidden">
+      {/* Sidebar */}
+      <motion.aside 
+        initial={false}
+        animate={{ width: sidebarOpen ? 280 : 80 }}
+        className="bg-white border-r border-zinc-200 flex flex-col z-30"
+      >
+        <div className="p-6 flex items-center justify-between">
+          {sidebarOpen && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-bold text-zinc-900 tracking-tight">AdminPanel</span>
+            </div>
+          )}
           <button 
-            onClick={() => setActiveTab('overview')}
-            className={cn("px-4 py-2 rounded-lg text-sm font-bold transition-all", activeTab === 'overview' ? "bg-teal-600 text-white" : "text-zinc-500 hover:text-zinc-900")}
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
           >
-            Overview
-          </button>
-          <button 
-            onClick={() => setActiveTab('users')}
-            className={cn("px-4 py-2 rounded-lg text-sm font-bold transition-all", activeTab === 'users' ? "bg-teal-600 text-white" : "text-zinc-500 hover:text-zinc-900")}
-          >
-            Users
-          </button>
-          <button 
-            onClick={() => setActiveTab('logs')}
-            className={cn("px-4 py-2 rounded-lg text-sm font-bold transition-all", activeTab === 'logs' ? "bg-teal-600 text-white" : "text-zinc-500 hover:text-zinc-900")}
-          >
-            Logs
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
+
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto py-4">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                  isActive 
+                    ? "bg-indigo-50 text-indigo-600 shadow-sm" 
+                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                )}
+              >
+                <item.icon className={cn("w-5 h-5", isActive ? "text-indigo-600" : "text-zinc-400 group-hover:text-zinc-900")} />
+                {sidebarOpen && <span className="font-bold text-sm">{item.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-zinc-100">
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full flex items-center gap-3 px-4 py-3 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+          >
+            <LogOut className="w-5 h-5" />
+            {sidebarOpen && <span className="font-bold text-sm">Exit Admin</span>}
+          </button>
+        </div>
+      </motion.aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-8 z-20">
+          <div className="flex items-center gap-4">
+            <h2 className="font-bold text-zinc-900">
+              {menuItems.find(m => m.path === location.pathname)?.label || 'Admin'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="p-2 text-zinc-400 hover:text-zinc-900 relative">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+            <div className="h-8 w-px bg-zinc-200 mx-2"></div>
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <div className="text-sm font-bold text-zinc-900">{user.name}</div>
+                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Super Admin</div>
+              </div>
+              <div className="w-10 h-10 bg-zinc-100 rounded-xl border border-zinc-200 flex items-center justify-center font-bold text-zinc-600">
+                {user.name.charAt(0)}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-8">
+          <Outlet />
+        </main>
       </div>
-      
-      {activeTab === 'overview' && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-            {[
-              { label: 'Total VAs', value: stats?.totalVAs?.count || 0, icon: Users, color: 'text-blue-600' },
-              { label: 'Total Employers', value: stats?.totalEmployers?.count || 0, icon: Briefcase, color: 'text-teal-600' },
-              { label: 'Total Jobs', value: stats?.totalJobs?.count || 0, icon: BarChart3, color: 'text-emerald-600' },
-              { label: 'Pending Approvals', value: stats?.pendingJobs?.count || 0, icon: Clock, color: 'text-amber-600' },
-            ].map((stat, i) => (
-              <div key={i} className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={cn("p-2 rounded-lg bg-zinc-50", stat.color)}>
-                    <stat.icon className="w-6 h-6" />
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-zinc-900">{stat.value}</div>
-                <div className="text-sm font-medium text-zinc-500">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-zinc-100">
-              <h2 className="text-xl font-bold text-zinc-900">Pending Job Approvals</h2>
-            </div>
-            <div className="divide-y divide-zinc-100">
-              {pendingJobs.length === 0 ? (
-                <div className="p-12 text-center text-zinc-500">No pending jobs to review.</div>
-              ) : (
-                pendingJobs.map((job) => (
-                  <div key={job.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-zinc-50 transition-colors">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-zinc-900">{job.title}</h3>
-                        <span className="text-[10px] bg-zinc-100 text-zinc-500 px-2 py-0.5 rounded uppercase font-bold">{job.job_type}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
-                        <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> {job.company_name}</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Posted {new Date(job.created_at).toLocaleDateString()}</span>
-                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> ${job.salary_min} - ${job.salary_max}</span>
-                      </div>
-                      <p className="mt-2 text-sm text-zinc-600 line-clamp-1">{job.description}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => approveJob(job.id)}
-                        className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition-all"
-                      >
-                        Approve
-                      </button>
-                      <button 
-                        onClick={() => setRejectingJobId(job.id)}
-                        className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition-all"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {activeTab === 'users' && (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 className="text-xl font-bold text-zinc-900">User Management</h2>
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-              <input 
-                type="text" 
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Search users..."
-                className="w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-zinc-50 text-xs font-bold text-zinc-500 uppercase tracking-wider">
-                  <th className="px-6 py-4">Name</th>
-                  <th className="px-6 py-4">Role</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Joined</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-zinc-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-zinc-900">{u.name}</div>
-                      <div className="text-xs text-zinc-500">{u.email}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={cn(
-                        "text-[10px] font-bold uppercase px-2 py-1 rounded",
-                        u.role === 'va' ? "bg-blue-50 text-blue-600" : "bg-teal-50 text-teal-600"
-                      )}>
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={cn(
-                        "text-[10px] font-bold uppercase px-2 py-1 rounded",
-                        u.status === 'approved' ? "bg-emerald-50 text-emerald-600" : 
-                        u.status === 'pending' ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
-                      )}>
-                        {u.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-zinc-500">
-                      {new Date(u.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      {u.status !== 'approved' && (
-                        <button onClick={() => updateUserStatus(u.id, 'approved')} className="text-xs font-bold text-emerald-600 hover:underline">Approve</button>
-                      )}
-                      {u.status !== 'suspended' && (
-                        <button onClick={() => updateUserStatus(u.id, 'suspended')} className="text-xs font-bold text-amber-600 hover:underline">Suspend</button>
-                      )}
-                      <button onClick={() => deleteUser(u.id)} className="text-xs font-bold text-red-600 hover:underline">Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'logs' && (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-zinc-100">
-            <h2 className="text-xl font-bold text-zinc-900">Admin Activity Logs</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-zinc-50 text-xs font-bold text-zinc-500 uppercase tracking-wider">
-                  <th className="px-6 py-4">Admin</th>
-                  <th className="px-6 py-4">Action</th>
-                  <th className="px-6 py-4">Description</th>
-                  <th className="px-6 py-4">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {logs.map((log) => (
-                  <tr key={log.id} className="text-sm">
-                    <td className="px-6 py-4 font-medium text-zinc-900">{log.admin_name}</td>
-                    <td className="px-6 py-4">
-                      <span className="text-[10px] font-bold uppercase bg-zinc-100 text-zinc-600 px-2 py-1 rounded">
-                        {log.action_type.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-zinc-600">{log.description}</td>
-                    <td className="px-6 py-4 text-zinc-500">{new Date(log.created_at).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Rejection Modal */}
-      <AnimatePresence>
-        {rejectingJobId && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setRejectingJobId(null)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 p-6">
-              <h3 className="text-lg font-bold text-zinc-900 mb-4">Reject Job Listing</h3>
-              <textarea 
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Provide a reason for rejection..."
-                className="w-full h-32 p-3 border border-zinc-200 rounded-xl outline-none focus:ring-2 focus:ring-red-500 mb-4"
-              />
-              <div className="flex gap-3">
-                <button onClick={rejectJob} className="flex-1 bg-red-600 text-white py-2 rounded-lg font-bold hover:bg-red-700">Confirm Reject</button>
-                <button onClick={() => setRejectingJobId(null)} className="flex-1 bg-zinc-100 text-zinc-600 py-2 rounded-lg font-bold hover:bg-zinc-200">Cancel</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
@@ -1663,7 +1835,15 @@ const TalentSearchPage = () => {
                     <div className="flex-1">
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
                         <div>
-                          <h3 className="text-2xl font-bold text-zinc-900 group-hover:text-teal-600 transition-colors">{talent.name}</h3>
+                          <div className="flex items-center gap-3 mb-1">
+                            <h3 className="text-2xl font-bold text-zinc-900 group-hover:text-teal-600 transition-colors">{talent.name}</h3>
+                            {talent.verified_skills && talent.verified_skills.length > 0 && (
+                              <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full text-[10px] font-bold border border-amber-100">
+                                <Award className="w-3 h-3" />
+                                Verified
+                              </div>
+                            )}
+                          </div>
                           <p className="text-zinc-500 font-medium">{talent.headline}</p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1966,8 +2146,11 @@ export default function App() {
           id: session.user.id,
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
-          role: (session.user.user_metadata?.role as UserRole) || 'va',
-          status: 'approved'
+          role: (session.user.user_metadata?.role as UserRole) || 'JOB_SEEKER',
+          status: 'ACTIVE',
+          subscription_status: 'none',
+          email_verified: !!session.user.email_confirmed_at,
+          created_at: session.user.created_at
         };
         setUser(userData);
       }
@@ -1981,8 +2164,11 @@ export default function App() {
           id: session.user.id,
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
-          role: (session.user.user_metadata?.role as UserRole) || 'va',
-          status: 'approved'
+          role: (session.user.user_metadata?.role as UserRole) || 'JOB_SEEKER',
+          status: 'ACTIVE',
+          subscription_status: 'none',
+          email_verified: !!session.user.email_confirmed_at,
+          created_at: session.user.created_at
         };
         setUser(userData);
       } else {
@@ -2016,13 +2202,30 @@ export default function App() {
             <Route path="/jobs/:id" element={<JobDetailsPage user={user} />} />
             <Route path="/talents" element={<TalentSearchPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/subscription" element={<SubscriptionPage user={user} />} />
+            <Route path="/assessments" element={<SkillAssessmentPage user={user} />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminGuard user={user}><AdminLayout user={user} /></AdminGuard>}>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminOverview />} />
+              <Route path="users" element={<AdminUsers admin={user!} />} />
+              <Route path="employers" element={<AdminUsers admin={user!} filterRole="EMPLOYER" />} />
+              <Route path="jobs" element={<AdminJobs admin={user!} />} />
+              <Route path="subscriptions" element={<AdminSubscriptions />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="reports" element={<AdminReports admin={user!} />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="audit-logs" element={<AdminAuditLogs />} />
+            </Route>
+
             <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage onLogin={handleLogin} />} />
             <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage onLogin={handleLogin} />} />
             
             {/* Protected Routes */}
-            <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard user={user} /> : <Navigate to="/login" />} />
-            <Route path="/employer" element={user?.role === 'employer' ? <EmployerDashboard user={user} /> : <Navigate to="/login" />} />
-            <Route path="/va" element={user?.role === 'va' ? <VADashboard user={user} /> : <Navigate to="/login" />} />
+            <Route path="/employer" element={user?.role === 'EMPLOYER' ? <EmployerDashboard user={user} /> : <Navigate to="/login" />} />
+            <Route path="/va" element={user?.role === 'JOB_SEEKER' ? <VADashboard user={user} /> : <Navigate to="/login" />} />
             
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" />} />
