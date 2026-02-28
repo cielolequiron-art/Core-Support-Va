@@ -712,7 +712,7 @@ const LandingPage = ({ user }: { user: UserData | null }) => {
               animate={{ opacity: 1, y: 0 }}
               className="text-5xl md:text-6xl font-extrabold text-zinc-900 tracking-tight mb-6"
             >
-              Hire the Best <span className="text-indigo-600">Virtual Talent</span> from the Philippines
+              Connecting <span className="text-indigo-600">Visionary Owners</span> with Dedicated Talent.
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
